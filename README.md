@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains sample programs and supplementary information for Chapter 6 of the book *Introduction to AI Robot Development with ROS 2 and Python (Revised 2nd Edition)* by Demura, Hagiwara, Masutani, and Thang, published by Kodansha.
+This repository contains sample programs and supplementary information for Chapter 6 of a certain book.
 
 ## Directory Structure
 
