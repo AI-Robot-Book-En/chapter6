@@ -1,4 +1,4 @@
-# Chapter 6: Manipulation (English Edition)
+# Chapter 6: Manipulation
 
 ## Overview
 
