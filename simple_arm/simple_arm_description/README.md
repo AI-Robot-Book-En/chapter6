@@ -1,54 +1,54 @@
-# 簡単な2自由度ロボットアームのモデル（改訂第2版）
+# Simple 2-DOF Robot Arm Model
 
-## 概要
+## Overview
 
-- ロボットアームがどのようなものかを知るためのもの
-- URDFの見本
-- RVizでロボットモデルを表示する見本
+- For understanding what a robot arm is
+- URDF example
+- Example of displaying a robot model in RViz
 
-## インストール
+## Installation
 
-- ROSのワークスペースを`~/airobot_ws`とする．
+- Assume the ROS workspace is `~/airobot_ws`.
   ```
   cd ~/airobot_ws/src
   ```
 
-- このパッケージを含むリポジトリを入手
+- Get the repository including this package
   ```
   git clone https://github.com/AI-Robot-Book-Humble/chapter6
   ```
 
-- パッケージのビルド
+- Build the package
   ```
   sudo apt install ros-humble-joint-state-publisher-gui
   cd ~/airobot_ws
   colcon build --packages-select simple_arm_description
   ```
 
-## 実行
+## Execution
 
-- 端末で以下を実行
+- Run the following in a terminal
   ```
   source install/setup.bash
   ros2 launch simple_arm_description display.launch.py
   ```
-- `joint_state_publisher_gui`のウインドウのスライダを操作．
+- Operate the sliders in the `joint_state_publisher_gui` window.
 
-## ヘルプ
+## Help
 
-## 著者
+## Author
 
-升谷 保博
+Yasuhiro Masutani
 
-## 履歴
+## History
 
-- 2023-10-13: ROS Humbleで動作確認
-- 2022-08-23: ライセンス・ドキュメントの整備
+- 2023-10-13: Operation confirmed on ROS Humble
+- 2022-08-23: License and documentation organized
 
-## ライセンス
+## License
 
 Copyright (c) 2022-2025, MASUTANI Yasuhiro  
 All rights reserved.  
 This project is licensed under the Apache License 2.0 license found in the LICENSE file in the root directory of this project.
 
-## 参考文献
+## References
