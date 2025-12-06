@@ -17,7 +17,7 @@ GRIPPER_MIN = -radians(40.62) + 0.001
 GRIPPER_MAX = radians(38.27) - 0.001
 
 
-# CRNAE+ V2用のMoveItで逆運動学を計算しtfのフレームで与えられた点へ手先を位置決めするノード
+# Node that uses MoveIt for CRANE+ V2 to compute IK and position the endtip at a point given by a tf frame
 class CommanderMoveit(Node):
 
     def __init__(self):
@@ -97,61 +97,61 @@ class CommanderMoveit(Node):
         return [t.x, t.y, t.z, roll, pitch, yaw]
 
 
-# リストで表された3次元座標間の距離を計算する
+# Compute distance between 3D points represented as lists
 def dist(a, b):
     return sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2 + (a[2] - b[2])**2)
 
 def main():
-    # ROSクライアントの初期化
+    # Initialize ROS client
     rclpy.init()
 
-    # ノードクラスのインスタンス
+    # Instance of node class
     commander = CommanderMoveit()
 
-    # 別のスレッドでrclpy.spin()を実行する
+    # Run rclpy.spin() in another thread
     executor = MultiThreadedExecutor()
     thread = threading.Thread(target=rclpy.spin, args=(commander,executor,))
     threading.excepthook = lambda x: ()
     thread.start()
 
-    # 初期ポーズへゆっくり移動させる
+    # Move slowly to the initial pose
     joint = [0.0, -1.16, -2.01, -0.73]
     gripper = GRIPPER_MIN
     commander.set_max_velocity(0.2)
     commander.move_joint(joint)
     commander.move_gripper(gripper)
 
-    # 逆運動学の解の種類
+    # IK solution type
     elbow_up = True
 
-    # キー読み取りクラスのインスタンス
+    # Instance of key reader class
     kb = KBHit()
 
-    # 状態
+    # States
     INIT = 0
     WAIT = 1
     DONE = 2
     state = INIT
 
-    print('rキーを押して再初期化')
-    print('Escキーを押して終了')
+    print('Press r to reinitialize')
+    print('Press Esc to quit')
 
-    # Ctrl+CでエラーにならないようにKeyboardInterruptを捕まえる
+    # Catch KeyboardInterrupt to avoid Ctrl+C errors
     try:
         while True:
             time.sleep(0.01)            
-            # キーが押されているか？
+            # Is any key pressed?
             if kb.kbhit():
                 c = kb.getch()
                 if c == 'r':
-                    print('再初期化')
+                    print('Reinitialize')
                     state = INIT
-                elif ord(c) == 27:  # Escキー
+                elif ord(c) == 27:  # Esc key
                     break
 
             position = commander.get_frame_position('target')
             if position is None:
-                print('対象のフレームが見つからない')
+                print('Target frame not found')
             else:
                 xyz_now = position[0:3]
                 time_now = time.time()
@@ -168,14 +168,14 @@ def main():
                         pitch = 0
                         sucess = commander.move_endtip(xyz_now + [pitch])
                         if sucess:
-                            print('move_endtip()成功')
+                            print('move_endtip() succeeded')
                         else:
-                            print('move_endtip()失敗')
+                            print('move_endtip() failed')
     except KeyboardInterrupt:
         thread.join()
     else:
-        print('終了')
-        # 終了ポーズへゆっくり移動させる
+        print('Exit')
+        # Move slowly to the end pose
         joint = [0.0, 0.0, 0.0, 0.0]
         gripper = GRIPPER_MAX
         commander.set_max_velocity(0.2)
