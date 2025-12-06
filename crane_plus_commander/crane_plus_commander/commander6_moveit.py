@@ -21,7 +21,7 @@ def from_gripper_ratio(ratio):
     return gripper
 
 
-# 他からアクションのリクエストを受け付け，CRANE+ V2用のMoveItへ指令を送るノード
+# Node that accepts action requests and sends commands to MoveIt for CRANE+ V2
 class CommanderMoveit(Node):
 
     def __init__(self):
@@ -55,14 +55,14 @@ class CommanderMoveit(Node):
         self.gripper_interface.max_velocity = 1.0
         self.gripper_interface.max_acceleration = 1.0
 
-        # 文字列とポーズの組を保持する辞書
+        # Dictionary holding string-pose pairs
         self.poses = {}
         self.poses['zeros'] = [0, 0, 0, 0]
         self.poses['ones'] = [1, 1, 1, 1]
         self.poses['home'] = [0.0, -1.16, -2.01, -0.73]
         self.poses['carry'] = [-0.00, -1.37, -2.52, 1.17]
 
-        # アクションサーバ
+        # Action server
         self.action_server = ActionServer(
             self,
             StringCommand,
@@ -72,21 +72,21 @@ class CommanderMoveit(Node):
             handle_accepted_callback=self.handle_accepted_callback,
             callback_group=callback_group,
         )
-        self.goal_handle = None               # 処理中のゴールの情報を保持する変数
-        self.goal_lock = threading.Lock()     # 二重実行させないためのロック変数
-        self.execute_lock = threading.Lock()  # 二重実行させないためのロック変数
+        self.goal_handle = None               # Variable storing the active goal
+        self.goal_lock = threading.Lock()     # Lock to avoid double execution
+        self.execute_lock = threading.Lock()  # Lock to avoid double execution
 
     def handle_accepted_callback(self, goal_handle):
-        with self.goal_lock:                  # ブロック内を二重実行させない
+        with self.goal_lock:                  # Avoid double execution in this block
             if self.goal_handle is not None and self.goal_handle.is_active:
-                self.get_logger().info('前の処理を中止')
+                self.get_logger().info('Abort previous goal')
                 self.goal_handle.abort()
                 self.cancel_joint_and_gripper()
-            self.goal_handle = goal_handle   # ゴール情報の更新
-        goal_handle.execute()                # ゴール処理の実行
+            self.goal_handle = goal_handle   # Update goal info
+        goal_handle.execute()                # Execute goal
 
     def execute_callback(self, goal_handle):
-        with self.execute_lock:              # ブロック内を二重実行させない
+        with self.execute_lock:              # Avoid double execution in this block
             self.get_logger().info(f'command: {goal_handle.request.command}')
             result = StringCommand.Result()
             words = goal_handle.request.command.split()
@@ -139,7 +139,7 @@ class CommanderMoveit(Node):
             result.answer = f'NG {words[0]} move_gripper() failed'
 
     def cancel_callback(self, goal_handle):
-        self.get_logger().info('キャンセル受信')
+        self.get_logger().info('Cancel received')
         self.cancel_joint_and_gripper()
         return CancelResponse.ACCEPT
 
@@ -165,37 +165,37 @@ class CommanderMoveit(Node):
 
 
 def main():
-    print('開始')
+    print('Start')
 
-    # ROSクライアントの初期化
+    # Initialize ROS client
     rclpy.init()
 
-    # ノードクラスのインスタンス
+    # Instance of node class
     commander = CommanderMoveit()
 
-    # 別のスレッドでrclpy.spin()を実行する
+    # Run rclpy.spin() in another thread
     executor = MultiThreadedExecutor()
     thread = threading.Thread(target=rclpy.spin, args=(commander,executor,))
     threading.excepthook = lambda x: ()
     thread.start()
 
-    # 初期ポーズへゆっくり移動させる
+    # Move slowly to the initial pose
     commander.set_max_velocity(0.2)
     commander.move_joint(commander.poses['home'])
     commander.move_gripper(GRIPPER_MAX)
-    print('アクションサーバ待機')
+    print('Action server ready')
 
-    # Ctrl+CでエラーにならないようにKeyboardInterruptを捕まえる
+    # Catch KeyboardInterrupt to avoid Ctrl+C errors
     try:
-        input('Enterキーを押すと終了\n')
+        input('Press Enter to exit\n')
     except KeyboardInterrupt:
         thread.join()
     else:
-        print('アクションサーバ停止')
-        # 終了ポーズへゆっくり移動させる
+        print('Stop action server')
+        # Move slowly to the end pose
         commander.set_max_velocity(0.2)
         commander.move_joint(commander.poses['zeros'])
         commander.move_gripper(GRIPPER_MIN)
 
     rclpy.try_shutdown()
-    print('終了')
+    print('Exit')
