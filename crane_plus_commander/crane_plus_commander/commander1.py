@@ -70,7 +70,7 @@ def main():
     # Instance of key reader class
     kb = KBHit()
 
-    print('Press 1, 2, 3, 4, 5, 6, 7, 8, 9, or 0 to move joints')
+    print('Press 1/2 3/4 5/6/7/8 9/0 to move joints')
     print('Press Space for stand pose')
     print('Press Esc to quit')
 
