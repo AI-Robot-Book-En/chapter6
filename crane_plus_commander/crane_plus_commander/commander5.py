@@ -71,7 +71,7 @@ class Commander(Node):
         return [t.x, t.y, t.z, roll, pitch, yaw]
 
 
-# Calculate distance between 3D points represented as lists
+# Compute distance between 3D points represented as lists
 def dist(a, b):
     return sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2 + (a[2] - b[2])**2)
 
