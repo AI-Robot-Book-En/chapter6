@@ -14,7 +14,7 @@ from crane_plus_commander.kinematics import (
     inverse_kinematics, joint_in_range, GRIPPER_MAX, GRIPPER_MIN)
 
 
-# tfのフレームで与えられた点へCRANE+ V2の手先を位置決めするノード
+# Node to position the CRANE+ V2 endtip at a point given by a tf frame
 class Commander(Node):
 
     def __init__(self):
@@ -71,63 +71,63 @@ class Commander(Node):
         return [t.x, t.y, t.z, roll, pitch, yaw]
 
 
-# リストで表された3次元座標間の距離を計算する
+# Calculate distance between 3D points represented as lists
 def dist(a, b):
     return sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2 + (a[2] - b[2])**2)
 
 def main():
-    # ROSクライアントの初期化
+    # Initialize ROS client
     rclpy.init()
 
-    # ノードクラスのインスタンス
+    # Instance of node class
     commander = Commander()
 
-    # 別のスレッドでrclpy.spin()を実行する
+    # Run rclpy.spin() in another thread
     thread = threading.Thread(target=rclpy.spin, args=(commander,))
     threading.excepthook = lambda x: ()
     thread.start()
 
-    # 最初の指令をパブリッシュする前に少し待つ
+    # Wait a bit before publishing the first command
     time.sleep(2.0)
 
-    # 初期ポーズへゆっくり移動させる
+    # Move slowly to the initial pose
     joint = [0.0, -1.16, -2.01, -0.73]
     gripper = GRIPPER_MIN
     dt = 5
     commander.publish_joint(joint, dt)
     commander.publish_gripper(gripper, dt)
 
-    # 逆運動学の解の種類
+    # IK solution type
     elbow_up = True
 
-    # キー読み取りクラスのインスタンス
+    # Instance of key reader class
     kb = KBHit()
 
-    # 状態
+    # States
     INIT = 0
     WAIT = 1
     DONE = 2
     state = INIT
 
-    print('rキーを押して再初期化')
-    print('Escキーを押して終了')
+    print('Press r to reinitialize')
+    print('Press Esc to quit')
 
-    # Ctrl+CでエラーにならないようにKeyboardInterruptを捕まえる
+    # Catch KeyboardInterrupt to avoid Ctrl+C errors
     try:
         while True:
             time.sleep(0.01)            
-            # キーが押されているか？
+            # Is any key pressed?
             if kb.kbhit():
                 c = kb.getch()
                 if c == 'r':
-                    print('再初期化')
+                    print('Reinitialize')
                     state = INIT
-                elif ord(c) == 27:  # Escキー
+                elif ord(c) == 27:  # Esc key
                     break
 
             position = commander.get_frame_position('target')
             if position is None:
-                print('対象のフレームが見つからない')
+                print('Target frame not found')
             else:
                 xyz_now = position[0:3]
                 time_now = time.time()
@@ -143,11 +143,11 @@ def main():
                         pitch = 0
                         joint = inverse_kinematics(xyz_now + [pitch], elbow_up)
                         if joint is None:
-                            print('逆運動学の解なし')
+                            print('No IK solution')
                         elif not all(joint_in_range(joint)):
-                            print('関節指令値が範囲外')
+                            print('Joint command out of range')
                         else:
-                            print(f'関節指令値： [{joint[0]:.2f}, {joint[1]:.2f},',
+                            print(f'Joint cmd: [{joint[0]:.2f}, {joint[1]:.2f},',
                                 f'{joint[2]:.2f}, {joint[3]:.2f}]')
                             dt = 0.5
                             commander.publish_joint(joint, dt)
@@ -155,8 +155,8 @@ def main():
     except KeyboardInterrupt:
         thread.join()
     else:
-        print('終了')
-        # 終了ポーズへゆっくり移動させる
+        print('Exit')
+        # Move slowly to the end pose
         joint = [0.0, 0.0, 0.0, 0.0]
         gripper = GRIPPER_MAX
         dt = 5
