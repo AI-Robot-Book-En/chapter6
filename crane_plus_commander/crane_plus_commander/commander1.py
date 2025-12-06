@@ -8,7 +8,7 @@ from crane_plus_commander.kbhit import KBHit
 from crane_plus_commander.kinematics import gripper_in_range, joint_in_range
 
 
-# CRANE+ V2用のトピックへ指令をパブリッシュするノード
+# Node to publish commands to CRANE+ V2 topics
 class Commander(Node):
 
     def __init__(self):
@@ -46,49 +46,49 @@ class Commander(Node):
 
 
 def main():
-    # ROSクライアントの初期化
+    # Initialize ROS client
     rclpy.init()
 
-    # ノードクラスのインスタンス
+    # Instance of node class
     commander = Commander()
 
-    # 別のスレッドでrclpy.spin()を実行する
+    # Run rclpy.spin() in another thread
     thread = threading.Thread(target=rclpy.spin, args=(commander,))
     threading.excepthook = lambda x: ()
     thread.start()
 
-    # 最初の指令をパブリッシュする前に少し待つ
+    # Wait a bit before publishing the first command
     time.sleep(1.0)
 
-    # 初期ポーズへゆっくり移動させる
+    # Move slowly to the initial pose
     joint = [0.0, 0.0, 0.0, 0.0]
     gripper = 0
     dt = 5
     commander.publish_joint(joint, dt)
     commander.publish_gripper(gripper, dt)
 
-    # キー読み取りクラスのインスタンス
+    # Instance of key reader class
     kb = KBHit()
 
-    print('1, 2, 3, 4, 5, 6, 7, 8, 9, 0キーを押して関節を動かす')
-    print('スペースキーを押して起立状態にする')
-    print('Escキーを押して終了')
+    print('Press 1, 2, 3, 4, 5, 6, 7, 8, 9, or 0 to move joints')
+    print('Press Space for stand pose')
+    print('Press Esc to quit')
 
-    # Ctrl+CでエラーにならないようにKeyboardInterruptを捕まえる
+    # Catch KeyboardInterrupt to avoid Ctrl+C errors
     try:
         while True:
             time.sleep(0.01)
-            # キーが押されているか？
+            # Is any key pressed?
             if kb.kbhit():
                 c = kb.getch()
-                # 変更前の値を保持
+                # Keep previous values
                 joint_prev = joint.copy()
                 gripper_prev = gripper
 
-                # 目標関節値とともに送る目標時間
+                # Target time to send with target joint values
                 dt = 0.2
 
-                # 押されたキーによって場合分けして処理
+                # Branch by pressed key
                 if c == '1':
                     joint[0] -= 0.1
                 elif c == '2':
@@ -109,22 +109,22 @@ def main():
                     gripper -= 0.1
                 elif c == '0':
                     gripper += 0.1
-                elif c == ' ':  # スペースキー
+                elif c == ' ':  # Space key
                     joint = [0.0, 0.0, 0.0, 0.0]
                     gripper = 0
                     dt = 1.0
-                elif ord(c) == 27:  # Escキー
+                elif ord(c) == 27:  # Esc key
                     break
 
-                # 指令値を範囲内に収める
+                # Keep command values within range
                 if not all(joint_in_range(joint)):
-                    print('関節指令値が範囲外')
+                    print('Joint command out of range')
                     joint = joint_prev.copy()
                 if not gripper_in_range(gripper):
-                    print('グリッパ指令値が範囲外')
+                    print('Gripper command out of range')
                     gripper = gripper_prev
 
-                # 変化があればパブリッシュ
+                # Publish if there is any change
                 publish = False
                 if joint != joint_prev:
                     print((f'joint: [{joint[0]:.2f}, {joint[1]:.2f}, '
@@ -135,14 +135,14 @@ def main():
                     print(f'gripper: {gripper:.2f}')
                     commander.publish_gripper(gripper, dt)
                     publish = True
-                # パブリッシュした場合は，設定時間と同じだけ停止
+                # If published, sleep for the configured duration
                 if publish:
                     time.sleep(dt)
     except KeyboardInterrupt:
         thread.join()
     else:
-        print('終了')
-        # 終了ポーズへゆっくり移動させる
+        print('Exit')
+        # Move slowly to the end pose
         joint = [0.0, 0.0, 0.0, 0.0]
         gripper = 0
         dt = 5
