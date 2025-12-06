@@ -28,7 +28,7 @@ def gripper_in_range(gripper):
     return GRIPPER_MIN <= gripper <= GRIPPER_MAX
 
 
-# 値を最小値と最大値の値に収めた値を返す
+# Return x clamped to min and max
 def clip(x, xmin, xmax):
     r = x
     if x < xmin:
@@ -38,12 +38,12 @@ def clip(x, xmin, xmax):
     return r
 
 
-# 範囲内に収めた関節値のリストを返す
+# Return joint values clipped to range
 def cliped_joint(joint):
     return list(map(clip, joint, JOINT_MIN, JOINT_MAX))
 
 
-# 範囲内に収めたグリッパ値を返す
+# Return gripper value clipped to range
 def cliped_gripper(gripper):
     return clip(gripper, GRIPPER_MIN, GRIPPER_MAX)
 
@@ -58,7 +58,7 @@ def normalize_angle(x):
 
 def forward_kinematics(joint):
     [q1, q2, q3, q4] = joint
-    # 考えやすいように，q2の0の角度と回転方向を変更して使う
+    # For convenience, shift q2 zero and direction
     q2 = pi/2 - q2
     r = L2*cos(q2) + L3*cos(q2+q3) + L4*cos(q2+q3+q4)
     x = r*cos(q1)
@@ -72,17 +72,17 @@ def inverse_kinematics(endtip, elbow_up):
     [x, y, z, pitch] = endtip
     r = sqrt(x**2 + y**2)
     if r == 0.0:
-        return None  # 解なし
+        return None  # No solution
     q1 = atan2(y, x)
     rr = r - L4*cos(pitch)
     zz = z - L4*sin(pitch)
     d = sqrt(rr**2 + (zz - L1)**2)
     cq3 = (d**2 - L2**2 - L3**2)/(2*L2*L3)
     if abs(cq3) > 1.0:
-        return None  # 解なし
+        return None  # No solution
     phi = atan2(zz - L1, rr)
     psi = acos((d**2 + L2**2 - L3**2)/(2*L2*d))
-    # 考えやすいように，q2の0の角度と回転方向を変更して使う
+    # For convenience, shift q2 zero and direction
     if elbow_up:
         q2 = normalize_angle(phi + psi)
         q3 = -acos(cq3)
@@ -90,7 +90,7 @@ def inverse_kinematics(endtip, elbow_up):
         q2 = normalize_angle(phi - psi)
         q3 = acos(cq3)
     q4 = normalize_angle(pitch - q2 - q3)
-    # q2をCRANE+の仕様に変換
+    # Convert q2 to CRANE+ spec
     q2 = pi/2 - q2
     return [q1, q2, q3, q4]
 
@@ -130,7 +130,7 @@ def main():
         if joint is not None:
             print('joint:', joint, ' gripper:', gripper)
         else:
-            print("解なし")
+            print("No solution")
 
 
 if __name__ == '__main__':
