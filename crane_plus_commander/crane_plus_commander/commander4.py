@@ -9,7 +9,7 @@ import time
 import threading
 
 
-# CRANE+ V2用のアクションへリクエストを送るノード
+# Node to send requests to CRANE+ V2 actions
 class Commander(Node):
 
     def __init__(self, timer=False):
@@ -91,52 +91,52 @@ class Commander(Node):
 
 
 def main():
-    # ROSクライアントの初期化
+    # Initialize ROS client
     rclpy.init()
 
-    # ノードクラスのインスタンス
+    # Instance of node class
     commander = Commander()
 
-    # 別のスレッドでrclpy.spin()を実行する
+    # Run rclpy.spin() in another thread
     thread = threading.Thread(target=rclpy.spin, args=(commander,))
     threading.excepthook = lambda x: ()
     thread.start()
 
-    # 最初の指令をパブリッシュする前に少し待つ
+    # Wait a bit before publishing the first command
     time.sleep(1.0)
 
-    # 文字列とポーズの組を保持する辞書
+    # Dictionary holding name-pose pairs
     goals = {}
     goals['zeros'] = [0, 0, 0, 0]
     goals['ones'] = [1, 1, 1, 1]
     goals['home'] = [0.0, -1.16, -2.01, -0.73]
     goals['carry'] = [-0.00, -1.37, -2.52, 1.17]
 
-    # 初期ポーズへゆっくり移動させる
+    # Move slowly to the initial pose
     joint = [0.0, 0.0, 0.0, 0.0]
     gripper = 0
     dt = 5
     commander.publish_joint(joint, dt)
     commander.publish_gripper(gripper, dt)
 
-    print('同期的なアクションの利用')
+    print('Using synchronous actions')
 
-    # Ctrl+CでエラーにならないようにKeyboardInterruptを捕まえる
+    # Catch KeyboardInterrupt to avoid Ctrl+C errors
     try:
         while True:
-            # 目標関節値とともに送る目標時間
+            # Target time to send with target joint values
             dt = 3.0
 
             for key, item in goals.items():
                 print(f'{key:8} {item}')
-            name = input('目標の名前を入力: ')
+            name = input('Enter goal name: ')
             if name == '':
                 break
             if name not in goals:
-                print(f'{name}は登録されていません')
+                print(f'{name} is not registered')
                 continue
 
-            print('目標を送って結果待ち…')
+            print('Sending goal and waiting...')
             r = commander.send_goal_joint(goals[name], dt)
             print(f'r.result.error_code: {r.result.error_code}')
             j, g = commander.get_joint_gripper()
@@ -145,8 +145,8 @@ def main():
     except KeyboardInterrupt:
         thread.join()
     else:
-        print('終了')
-        # 終了ポーズへゆっくり移動させる
+        print('Exit')
+        # Move slowly to the end pose
         joint = [0.0, 0.0, 0.0, 0.0]
         gripper = 0
         dt = 5
