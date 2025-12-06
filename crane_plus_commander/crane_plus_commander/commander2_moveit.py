@@ -21,7 +21,7 @@ def from_gripper_ratio(ratio):
     return gripper
 
 
-# CRNAE+ V2用のMoveItで逆運動学を計算し関節値の指令を送るノード
+# Node that computes IK with MoveIt for CRANE+ V2 and sends joint commands
 class CommanderMoveit(Node):
 
     def __init__(self):
@@ -98,57 +98,57 @@ class CommanderMoveit(Node):
 
 
 def main():
-    # ROSクライアントの初期化
+    # Initialize ROS client
     rclpy.init()
 
-    # ノードクラスのインスタンス
+    # Instance of node class
     commander = CommanderMoveit()
 
-    # 別のスレッドでrclpy.spin()を実行する
+    # Run rclpy.spin() in another thread
     executor = MultiThreadedExecutor()
     thread = threading.Thread(target=rclpy.spin, args=(commander,executor,))
     threading.excepthook = lambda x: ()
     thread.start()
 
-    # 初期ポーズへゆっくり移動させる
+    # Move slowly to the initial pose
     joint = [0.0, -1.16, -2.01, -0.73]
     gripper = 0
     commander.set_max_velocity(0.2)
     commander.move_joint(joint)
     commander.move_gripper(gripper)
 
-    # 逆運動学の解の種類
+    # IK solution type
     elbow_up = True
 
-    # キー読み取りクラスのインスタンス
+    # Instance of key reader class
     kb = KBHit()
 
-    print('1, 2, 3, 4, 5, 6, 7, 8, 9, 0キーを押して関節を動かす')
-    print('a, z, s, x, d, c, f, v, g, bキーを押して手先を動かす')
-    print('eキーを押して逆運動学の解を切り替える')
-    print('スペースキーを押して起立状態にする')
-    print('Escキーを押して終了')
+    print('Press 1/2 3/4 5/6/7/8 9/0 to move joints')
+    print('Press a/z s/x d/c f/v g/b to move endtip')
+    print('Press e to toggle IK solution')
+    print('Press Space for stand pose')
+    print('Press Esc to quit')
 
-    # Ctrl+CでエラーにならないようにKeyboardInterruptを捕まえる
+    # Catch KeyboardInterrupt to avoid Ctrl+C errors
     try:
         while True:
             time.sleep(0.01)
-            # キーが押されているか？
+            # Is any key pressed?
             if kb.kbhit():
                 c = kb.getch()
 
-                # 順運動学
+                # Forward kinematics
                 [x, y, z, pitch] = commander.forward_kinematics(joint)
                 ratio = to_gripper_ratio(gripper)
 
-                # 変更前の値を保持
+                # Keep previous values
                 joint_prev = joint.copy()
                 gripper_prev = gripper
                 elbow_up_prev = elbow_up
 
                 commander.set_max_velocity(1.0)
 
-                # 押されたキーによって場合分けして処理
+                # Branch by pressed key
                 if c == '1':
                     joint[0] -= 0.1
                 elif c == '2':
@@ -193,46 +193,46 @@ def main():
                     elbow_up = not elbow_up
                     print(f'elbow_up: {elbow_up}')
                     commander.set_max_velocity(0.2)
-                elif c == ' ':  # スペースキー
+                elif c == ' ':  # Space key
                     joint = [0.0, 0.0, 0.0, 0.0]
                     gripper = 0
                     commander.set_max_velocity(0.2)
-                elif ord(c) == 27:  # Escキー
+                elif ord(c) == 27:  # Esc key
                     break
 
-                # 逆運動学
+                # Inverse kinematics
                 if c in 'azsxdcfve':
                     joint = commander.inverse_kinematics([x, y, z, pitch], elbow_up)
                     if joint is None:
-                        print('逆運動学の解なし')
+                        print('No IK solution')
                         joint = joint_prev.copy()
                         elbow_up = elbow_up_prev
                 elif c in 'gb':
                     gripper = from_gripper_ratio(ratio)
 
                 if not (GRIPPER_MIN <= gripper <= GRIPPER_MAX):
-                    print('グリッパ指令値が範囲外')
+                    print('Gripper command out of range')
                     gripper = gripper_prev
 
-                # 変化があれば指令を送る
+                # Send command if there is any change
                 if joint != joint_prev:
                     print((f'joint: [{joint[0]:.2f}, {joint[1]:.2f}, '
                            f'{joint[2]:.2f}, {joint[3]:.2f}]'))
                     success = commander.move_joint(joint)
                     if not success:
-                        print('move_joint()失敗')
+                        print('move_joint() failed')
                         joint = joint_prev.copy()
                 if gripper != gripper_prev:
                     print(f'gripper: {gripper:.2f}')
                     success = commander.move_gripper(gripper)
                     if not success:
-                        print('move_gripper()失敗')
+                        print('move_gripper() failed')
                         gripper = gripper_prev
     except KeyboardInterrupt:
         thread.join()
     else:
-        print('終了')
-        # 終了ポーズへゆっくり移動させる
+        print('Exit')
+        # Move slowly to the end pose
         joint = [0.0, 0.0, 0.0, 0.0]
         gripper = 0
         commander.set_max_velocity(0.2)
