@@ -72,12 +72,12 @@ class CommanderMoveit(Node):
             handle_accepted_callback=self.handle_accepted_callback,
             callback_group=callback_group,
         )
-        self.goal_handle = None               # Variable storing the active goal
+        self.goal_handle = None  # Variable storing the active goal
         self.goal_lock = threading.Lock()     # Lock to avoid double execution
         self.execute_lock = threading.Lock()  # Lock to avoid double execution
 
     def handle_accepted_callback(self, goal_handle):
-        with self.goal_lock:                  # Avoid double execution in this block
+        with self.goal_lock:  # Avoid double execution in this block
             if self.goal_handle is not None and self.goal_handle.is_active:
                 self.get_logger().info('Abort previous goal')
                 self.goal_handle.abort()
@@ -86,7 +86,7 @@ class CommanderMoveit(Node):
         goal_handle.execute()                # Execute goal
 
     def execute_callback(self, goal_handle):
-        with self.execute_lock:              # Avoid double execution in this block
+        with self.execute_lock:  # Avoid double execution in this block
             self.get_logger().info(f'command: {goal_handle.request.command}')
             result = StringCommand.Result()
             words = goal_handle.request.command.split()
