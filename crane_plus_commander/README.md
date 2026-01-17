@@ -35,9 +35,9 @@
 
 - Follow the instructions in the [crane_plus README](https://github.com/AI-Robot-Book-En/crane_plus/blob/master/README.md):
   ```
-  rosdep install -r -y -i --from-paths .
   cd ~/airobot_ws
-  colcon build
+  rosdep install -r -y -i --from-paths src
+  colcon build  --packages-select crane_plus
   source install/setup.bash
   ```
 
@@ -45,9 +45,11 @@
   ```
   cd ~/airobot_ws/src
   git clone https://github.com/AndrejOrsula/pymoveit2
-  rosdep install -y -r -i --rosdistro ${ROS_DISTRO} --from-paths .
+  cd pymoveit2
+  git checkout 640bb85
   cd ~/airobot_ws
-  colcon build --merge-install --cmake-args "-DCMAKE_BUILD_TYPE=Release"
+  rosdep install -y -r -i --from-paths src
+  colcon build --packages-select pymoveit2 --cmake-args "-DCMAKE_BUILD_TYPE=Release"
   source install/setup.bash
   ```
 
